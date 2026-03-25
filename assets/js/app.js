@@ -1,6 +1,6 @@
 // ============================================
 // FREIGHTFORCE.AI - MAIN JS
-// Clean | Fast | Mobile Menu Working
+// Clean | Fast | Mobile Menu Working | Tabs Working
 // ============================================
 
 $(document).ready(function () {
@@ -23,6 +23,57 @@ $(document).ready(function () {
 		easing: 'ease-out-cubic'
 	});
 
+	// ========== AI TABS - WORKING ==========
+	// Tab switching for premium tabs
+	$('.tab-premium').on('click', function () {
+		const tabId = $(this).data('tab');
+
+		// Remove active class from all tabs
+		$('.tab-premium').removeClass('active');
+		// Add active class to clicked tab
+		$(this).addClass('active');
+
+		// Hide all tab panes
+		$('.tab-pane-premium').removeClass('active');
+		// Show selected tab pane
+		$(`#tab-${tabId}-premium`).addClass('active');
+
+		// Reset and restart counters for new tab
+		setTimeout(() => {
+			$('.count-number').removeClass('counted');
+			animateCounters();
+		}, 100);
+	});
+
+	// ========== ANIMATED COUNTERS ==========
+	function animateCounters() {
+		$('.count-number').each(function () {
+			const $this = $(this);
+			const countTo = parseInt($this.data('count'));
+
+			if (!isNaN(countTo) && !$this.hasClass('counted')) {
+				$this.addClass('counted');
+				$({ countNum: 0 }).animate({
+					countNum: countTo
+				}, {
+					duration: 2000,
+					easing: 'swing',
+					step: function () {
+						$this.text(Math.floor(this.countNum));
+					},
+					complete: function () {
+						$this.text(countTo);
+					}
+				});
+			}
+		});
+	}
+
+	// Initial counter animation
+	setTimeout(() => {
+		animateCounters();
+	}, 500);
+
 	// ========== CUSTOM CURSOR (Desktop Only) ==========
 	if (window.innerWidth > 768) {
 		const cursorDot = $('.cursor-dot');
@@ -33,7 +84,7 @@ $(document).ready(function () {
 			cursorOutline.css({ top: e.clientY - 20, left: e.clientX - 20 });
 		});
 
-		$('.btn, .problem-card, .employee-card, .plan-card').on('mouseenter', function () {
+		$('.btn, .problem-card, .employee-card, .plan-card, .tab-premium').on('mouseenter', function () {
 			cursorOutline.css({
 				transform: 'scale(1.5)',
 				borderColor: '#6366f1',
@@ -85,7 +136,6 @@ $(document).ready(function () {
 	const navbar = $('.navbar');
 
 	if (menuToggle.length) {
-		// Open/Close menu
 		menuToggle.on('click', function (e) {
 			e.stopPropagation();
 			$(this).toggleClass('active');
@@ -99,7 +149,6 @@ $(document).ready(function () {
 			}
 		});
 
-		// Close menu when clicking a link
 		$('.nav-link').on('click', function () {
 			menuToggle.removeClass('active');
 			navbarCollapse.removeClass('show');
@@ -107,7 +156,6 @@ $(document).ready(function () {
 			$('body').css('overflow', '');
 		});
 
-		// Close menu when clicking outside
 		$(document).on('click', function (e) {
 			if (navbarCollapse.hasClass('show') && !$(e.target).closest('.navbar').length) {
 				menuToggle.removeClass('active');
@@ -139,7 +187,6 @@ $(document).ready(function () {
 			$(`.nav-link[href="#${current}"]`).addClass('active');
 		}
 
-		// Navbar background on scroll
 		if ($(window).scrollTop() > 50) {
 			$('.navbar').addClass('navbar-scrolled');
 		} else {
@@ -152,7 +199,6 @@ $(document).ready(function () {
 		e.preventDefault();
 		const target = $(this.hash);
 		if (target.length) {
-			// Close mobile menu if open
 			if (navbarCollapse.hasClass('show')) {
 				menuToggle.removeClass('active');
 				navbarCollapse.removeClass('show');
@@ -307,3 +353,125 @@ $(document).ready(function () {
 	);
 
 });
+// ========== CHAT AUTO-SCROLL ==========
+function scrollChatToBottom() {
+	const chatMessages = $('.chat-messages');
+	if (chatMessages.length) {
+		chatMessages.each(function () {
+			this.scrollTop = this.scrollHeight;
+		});
+	}
+}
+
+// Auto-scroll when new messages appear
+const observer = new MutationObserver(function () {
+	scrollChatToBottom();
+});
+
+// Observe chat messages container
+$('.chat-messages').each(function () {
+	observer.observe(this, { childList: true, subtree: true });
+});
+
+// Initial scroll
+setTimeout(scrollChatToBottom, 500);
+
+// Simulate typing animation and auto-response
+let chatInterval;
+let messageCount = 0;
+const demoMessages = [
+	{ user: "Where is my shipment FREIGHT-001?", ai: "Your shipment is currently in transit from Mumbai and expected to arrive on April 15, 2024. <a href='#'>Track live →</a>" },
+	{ user: "What's the estimated delivery time?", ai: "The estimated delivery is April 15, 2024 by 6:00 PM local time. I'll notify you when it's out for delivery." },
+	{ user: "Can I change the delivery address?", ai: "Yes, you can request address change. Please share the new address and I'll update it for you." }
+];
+
+function addUserMessage(text) {
+	const chatMessages = $('.chat-messages');
+	const messageHtml = `
+    <div class="message user">
+      <div class="message-bubble">${text}</div>
+      <div class="message-time">Just now</div>
+    </div>
+  `;
+	chatMessages.append(messageHtml);
+	scrollChatToBottom();
+}
+
+function addAIMessage(text, isTyping = false) {
+	const chatMessages = $('.chat-messages');
+	if (isTyping) {
+		const typingHtml = `
+      <div class="message ai typing">
+        <div class="message-bubble">
+          Typing<span class="typing-dots"><span>.</span><span>.</span><span>.</span></span>
+        </div>
+      </div>
+    `;
+		chatMessages.append(typingHtml);
+	} else {
+		// Remove typing indicator
+		$('.message.typing').remove();
+		const messageHtml = `
+      <div class="message ai">
+        <div class="message-bubble">${text}</div>
+        <div class="message-time">Just now</div>
+      </div>
+    `;
+		chatMessages.append(messageHtml);
+	}
+	scrollChatToBottom();
+}
+
+function startChatSimulation() {
+	if (chatInterval) clearInterval(chatInterval);
+
+	let index = 0;
+
+	function simulateNext() {
+		if (index >= demoMessages.length) return;
+
+		const msg = demoMessages[index];
+
+		// Add user message
+		addUserMessage(msg.user);
+
+		// Show typing indicator after user message
+		setTimeout(() => {
+			addAIMessage('', true);
+
+			// Add AI response after typing
+			setTimeout(() => {
+				addAIMessage(msg.ai);
+				index++;
+
+				if (index < demoMessages.length) {
+					setTimeout(simulateNext, 3000);
+				}
+			}, 1500);
+		}, 500);
+	}
+
+	setTimeout(simulateNext, 2000);
+}
+
+// Start chat simulation when Support AI tab is opened
+$('.tab-premium').on('click', function () {
+	const tabId = $(this).data('tab');
+	if (tabId === 'support') {
+		setTimeout(() => {
+			scrollChatToBottom();
+			// Clear existing messages and start fresh
+			$('.chat-messages').empty();
+			// Add welcome message
+			addAIMessage("Hello! I'm Support AI. How can I help you with your freight today?");
+			startChatSimulation();
+		}, 300);
+	}
+});
+
+// Start simulation if Support AI is active on page load
+if ($('.tab-premium.active').data('tab') === 'support') {
+	setTimeout(() => {
+		startChatSimulation();
+	}, 1000);
+}
