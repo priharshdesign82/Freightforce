@@ -521,6 +521,9 @@ body.menu-open {
     padding: 6px 16px;
     border-radius: 50px;
     margin-bottom: 24px;
+    @include responsive(mobile) {
+      margin-top: 30px;
+    }
   }
 
   .hero-title {
@@ -1175,7 +1178,9 @@ body.menu-open {
         gap: 12px;
         padding: 12px 0;
         border-bottom: 1px solid $border;
-
+        @include responsive(mobile) {
+          flex-direction: column;
+        }
         &:last-child {
           border-bottom: none;
         }
@@ -1588,7 +1593,7 @@ body.menu-open {
         background: $dark-card;
 
         @include responsive(mobile) {
-          padding: 10px 12px;
+          padding: 10px 2px;
         }
 
         input {
